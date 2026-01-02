@@ -27,7 +27,7 @@ export default function RedirectPage() {
     if (!error) {
         return (
             <div className="flex min-h-screen items-center justify-center p-24 font-mono">
-                <h1 className="text-xl font-bold">Codewalt Link Shortener</h1>
+                <h1 className="text-xl font-bold">UC Link Shortener</h1>
             </div>
         );
     }
