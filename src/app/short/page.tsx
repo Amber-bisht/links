@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { encodeLink, encodeLinkV1, encodeLinkV2 } from "@/utils/linkWrapper";
+import { encodeLink, encodeLinkV1, encodeLinkV2, encodeLinkV3 } from "@/utils/linkWrapper";
 
-type Version = 'base' | 'v1' | 'v2';
+type Version = 'base' | 'v1' | 'v2' | 'v3';
 
 export default function ShortPage() {
     const [url, setUrl] = useState("");
@@ -32,6 +32,10 @@ export default function ShortPage() {
             case 'v2':
                 slug = encodeLinkV2(targetUrl);
                 prefix = "v2/";
+                break;
+            case 'v3':
+                slug = encodeLinkV3(targetUrl);
+                prefix = "v3/";
                 break;
             default:
                 slug = encodeLink(targetUrl);
@@ -63,6 +67,7 @@ export default function ShortPage() {
                                 <option value="base">v0</option>
                                 <option value="v1">V1 </option>
                                 <option value="v2">V2 </option>
+                                <option value="v3">V3 (Linkshortify)</option>
                             </select>
                         </div>
 
@@ -73,7 +78,7 @@ export default function ShortPage() {
                             <input
                                 id="url-input"
                                 type="text"
-                                placeholder="https://example.com"
+                                placeholder={version === 'v3' ? 'https://lksfy.com/QDuafv' : 'https://example.com'}
                                 className="w-full p-3 rounded-lg border border-gray-300 dark:border-zinc-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}

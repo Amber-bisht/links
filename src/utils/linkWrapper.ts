@@ -109,3 +109,58 @@ export function decodeLinkV2(slug: string): string {
     return '';
   }
 }
+
+// V3 Logic: Linkshortify converter + V2 XOR cipher + Base64 encoding
+export function encodeLinkV3(url: string): string {
+  try {
+    // Check if it's a lksfy.com link
+    const lksfyMatch = url.match(/https?:\/\/lksfy\.com\/([a-zA-Z0-9]+)/);
+
+    if (!lksfyMatch) {
+      throw new Error('Invalid lksfy.com URL format');
+    }
+
+    const extractedId = lksfyMatch[1]; // Extract the ID (e.g., "QDuafv")
+
+    // Convert to sharclub.in format
+    const convertedUrl = `https://web.sharclub.in/?id=${extractedId}&plan_id=1`;
+
+    // Apply V2 XOR cipher
+    let xored = '';
+    for (let i = 0; i < convertedUrl.length; i++) {
+      xored += String.fromCharCode(
+        convertedUrl.charCodeAt(i) ^ XOR_KEY.charCodeAt(i % XOR_KEY.length)
+      );
+    }
+
+    // Then Base64 encode
+    const base64 = Buffer.from(xored).toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  } catch (e) {
+    console.error('Error encoding link V3:', e);
+    return '';
+  }
+}
+
+export function decodeLinkV3(slug: string): string {
+  try {
+    // Reverse URL-safe replacements and decode Base64
+    let base64 = slug.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const decoded = Buffer.from(base64, 'base64').toString('utf-8');
+
+    // Reverse XOR cipher (XOR is its own inverse)
+    let original = '';
+    for (let i = 0; i < decoded.length; i++) {
+      original += String.fromCharCode(
+        decoded.charCodeAt(i) ^ XOR_KEY.charCodeAt(i % XOR_KEY.length)
+      );
+    }
+    return original;
+  } catch (e) {
+    console.error('Error decoding link V3:', e);
+    return '';
+  }
+}
