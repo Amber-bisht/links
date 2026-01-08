@@ -3,16 +3,22 @@
 import { useState } from "react";
 import { encodeLink, encodeLinkV1, encodeLinkV2, encodeLinkV3 } from "@/utils/linkWrapper";
 
-type Version = 'base' | 'v1' | 'v2' | 'v3';
+type Version = 'base' | 'v1' | 'v2' | 'v3' | 'v4';
 
 export default function ShortPage() {
     const [url, setUrl] = useState("");
     const [version, setVersion] = useState<Version>("base");
     const [generatedLink, setGeneratedLink] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!url) return;
+
+        setLoading(true);
+        setError("");
+        setGeneratedLink("");
 
         // Basic validation
         let targetUrl = url;
@@ -20,7 +26,54 @@ export default function ShortPage() {
             targetUrl = "https://" + targetUrl;
         }
 
-        // Choose encoder based on version
+        // V4 uses server-side API with CAPTCHA
+        if (version === 'v4') {
+            try {
+                // Load reCAPTCHA if not already loaded
+                if (!(window as any).grecaptcha) {
+                    const script = document.createElement('script');
+                    script.src = `https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`;
+                    document.head.appendChild(script);
+                    await new Promise(resolve => script.onload = resolve);
+                }
+
+                // Execute reCAPTCHA
+                const token = await (window as any).grecaptcha.execute(
+                    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+                    { action: 'generate_link' }
+                );
+
+                // Call API
+                const response = await fetch('/api/v4', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: targetUrl,
+                        captchaToken: token,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    setError(data.error || 'Failed to generate link');
+                    setLoading(false);
+                    return;
+                }
+
+                setGeneratedLink(data.link);
+            } catch (err) {
+                setError('Failed to generate link. Please try again.');
+                console.error('V4 generation error:', err);
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
+        // For other versions, use client-side encoding
         let slug = "";
         let prefix = "";
 
@@ -45,6 +98,7 @@ export default function ShortPage() {
         // Use window.location.origin to get the current host
         const origin = typeof window !== "undefined" ? window.location.origin : "";
         setGeneratedLink(`${origin}/${prefix}${slug}`);
+        setLoading(false);
     };
 
     return (
@@ -68,6 +122,7 @@ export default function ShortPage() {
                                 <option value="v1">V1 </option>
                                 <option value="v2">V2 </option>
                                 <option value="v3">V3 (Linkshortify)</option>
+                                <option value="v4">V4 (CAPTCHA Protected) + linkshortify</option>
                             </select>
                         </div>
 
@@ -88,10 +143,17 @@ export default function ShortPage() {
 
                         <button
                             type="submit"
-                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                            disabled={loading}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors"
                         >
-                            Wrap Link
+                            {loading ? 'Generating...' : 'Wrap Link'}
                         </button>
+
+                        {error && (
+                            <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                            </div>
+                        )}
                     </form>
 
                     {generatedLink && (
