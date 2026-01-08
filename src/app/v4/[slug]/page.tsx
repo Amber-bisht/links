@@ -16,21 +16,78 @@ export default function V4RedirectPage() {
             try {
                 setStatus('loading');
 
-                // Load reCAPTCHA script
-                if (!(window as any).grecaptcha) {
-                    const script = document.createElement('script');
-                    script.src = `https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`;
-                    document.head.appendChild(script);
-                    await new Promise(resolve => script.onload = resolve);
+                // Check if CAPTCHA is configured
+                const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+                if (!siteKey) {
+                    console.warn('⚠️ CAPTCHA not configured - using development mode');
+                    // Development mode: directly call API with bypass token
+                    const response = await fetch('/api/v4/redirect', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            slug: slug,
+                            captchaToken: 'development-bypass',
+                        }),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        setError(data.error || 'Failed to verify. Please try again.');
+                        setStatus('error');
+                        return;
+                    }
+
+                    setStatus('redirecting');
+                    window.location.href = data.url;
+                    return;
                 }
 
+                // Production mode: Load and execute reCAPTCHA
                 setStatus('verifying');
 
+                // Load reCAPTCHA script if not already loaded
+                if (!(window as any).grecaptcha) {
+                    const script = document.createElement('script');
+                    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+
+                    // Handle script loading errors
+                    script.onerror = () => {
+                        console.error('Failed to load reCAPTCHA script');
+                        setError('Failed to load security verification. Please check your connection.');
+                        setStatus('error');
+                    };
+
+                    document.head.appendChild(script);
+
+                    // Wait for script to load
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                    });
+
+                    // Wait for grecaptcha to be ready
+                    await new Promise<void>(resolve => {
+                        const checkReady = setInterval(() => {
+                            if ((window as any).grecaptcha?.ready) {
+                                clearInterval(checkReady);
+                                (window as any).grecaptcha.ready(() => resolve());
+                            }
+                        }, 100);
+
+                        // Timeout after 10 seconds
+                        setTimeout(() => {
+                            clearInterval(checkReady);
+                            resolve();
+                        }, 10000);
+                    });
+                }
+
                 // Execute reCAPTCHA
-                const token = await (window as any).grecaptcha.execute(
-                    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
-                    { action: 'redirect' }
-                );
+                const token = await (window as any).grecaptcha.execute(siteKey, { action: 'redirect' });
 
                 // Call API to verify CAPTCHA and get redirect URL
                 const response = await fetch('/api/v4/redirect', {
@@ -56,9 +113,9 @@ export default function V4RedirectPage() {
                 setStatus('redirecting');
                 window.location.href = data.url;
 
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Redirect error:', err);
-                setError('An error occurred. Please try again.');
+                setError(err.message || 'An error occurred. Please try again.');
                 setStatus('error');
             }
         };
