@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decodeLinkV4 } from '@/utils/linkWrapper';
-import { verifyCaptcha } from '@/utils/captcha';
+import { verifyCaptcha, verifyCustomCaptcha } from '@/utils/captcha';
+import { CAPTCHA_CONFIG } from '@/config/captcha';
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,7 +17,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify CAPTCHA
-        const isCaptchaValid = await verifyCaptcha(captchaToken);
+        const isCaptchaValid = CAPTCHA_CONFIG.own === 1
+            ? await verifyCustomCaptcha(captchaToken)
+            : await verifyCaptcha(captchaToken);
+
         if (!isCaptchaValid) {
             return NextResponse.json(
                 { error: 'CAPTCHA verification failed. Please try again.' },

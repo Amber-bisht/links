@@ -43,6 +43,31 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
     }
 }
 
+export async function verifyCustomCaptcha(token: string): Promise<boolean> {
+    try {
+        const response = await fetch('https://captcha.asprin.dev/api/v3/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            console.error('Custom CAPTCHA verification failed:', data.reasons);
+        } else {
+            console.log('Custom CAPTCHA score:', data.score);
+        }
+
+        return data.success && data.passed;
+    } catch (error) {
+        console.error('Custom CAPTCHA verification error:', error);
+        return false;
+    }
+}
+
 
 // Check if request is from Railway domain
 export function isRailwayDomain(request: Request): boolean {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ShieldCheck, AlertCircle, Lock } from "lucide-react";
+import { CAPTCHA_CONFIG } from "@/config/captcha";
 
 export default function V4RedirectPage() {
     const params = useParams();
@@ -47,48 +48,75 @@ export default function V4RedirectPage() {
                     return;
                 }
 
-                // Production mode: Load and execute reCAPTCHA
+                // Production mode: Load and execute CAPTCHA
                 setStatus('verifying');
 
-                // Load reCAPTCHA script if not already loaded
-                if (!(window as any).grecaptcha) {
-                    const script = document.createElement('script');
-                    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+                let token = '';
 
-                    // Handle script loading errors
-                    script.onerror = () => {
-                        console.error('Failed to load reCAPTCHA script');
-                        setError('Failed to load security verification. Please check your connection.');
-                        setStatus('error');
-                    };
+                if (CAPTCHA_CONFIG.own === 1) {
+                    // Load custom CAPTCHA script
+                    if (!(window as any).CustomCaptchaV3) {
+                        const script = document.createElement('script');
+                        script.src = `https://captcha.asprin.dev/captcha-v3.js`;
 
-                    document.head.appendChild(script);
+                        script.onerror = () => {
+                            console.error('Failed to load Custom CAPTCHA script');
+                            setError('Failed to load security verification. Please check your connection.');
+                            setStatus('error');
+                        };
 
-                    // Wait for script to load
-                    await new Promise((resolve, reject) => {
-                        script.onload = resolve;
-                        script.onerror = reject;
-                    });
+                        document.head.appendChild(script);
 
-                    // Wait for grecaptcha to be ready
-                    await new Promise<void>(resolve => {
-                        const checkReady = setInterval(() => {
-                            if ((window as any).grecaptcha?.ready) {
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                        });
+                    }
+
+                    // Execute Custom CAPTCHA
+                    token = (window as any).CustomCaptchaV3.execute(slug, 'redirect');
+                } else {
+                    // Production mode: Load and execute reCAPTCHA
+                    // Load reCAPTCHA script if not already loaded
+                    if (!(window as any).grecaptcha) {
+                        const script = document.createElement('script');
+                        script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+
+                        // Handle script loading errors
+                        script.onerror = () => {
+                            console.error('Failed to load reCAPTCHA script');
+                            setError('Failed to load security verification. Please check your connection.');
+                            setStatus('error');
+                        };
+
+                        document.head.appendChild(script);
+
+                        // Wait for script to load
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                        });
+
+                        // Wait for grecaptcha to be ready
+                        await new Promise<void>(resolve => {
+                            const checkReady = setInterval(() => {
+                                if ((window as any).grecaptcha?.ready) {
+                                    clearInterval(checkReady);
+                                    (window as any).grecaptcha.ready(() => resolve());
+                                }
+                            }, 100);
+
+                            // Timeout after 10 seconds
+                            setTimeout(() => {
                                 clearInterval(checkReady);
-                                (window as any).grecaptcha.ready(() => resolve());
-                            }
-                        }, 100);
+                                resolve();
+                            }, 10000);
+                        });
+                    }
 
-                        // Timeout after 10 seconds
-                        setTimeout(() => {
-                            clearInterval(checkReady);
-                            resolve();
-                        }, 10000);
-                    });
+                    // Execute reCAPTCHA
+                    token = await (window as any).grecaptcha.execute(siteKey, { action: 'redirect' });
                 }
-
-                // Execute reCAPTCHA
-                const token = await (window as any).grecaptcha.execute(siteKey, { action: 'redirect' });
 
                 // Call API to verify CAPTCHA and get redirect URL
                 const response = await fetch('/api/v4/redirect', {
@@ -198,7 +226,7 @@ export default function V4RedirectPage() {
 
                 <div className="mt-6 text-center">
                     <p className="text-xs text-zinc-600">
-                        Protected by reCAPTCHA v3
+                        Protected by {CAPTCHA_CONFIG.own === 1 ? 'asprin captcha' : 'reCAPTCHA v3'}
                     </p>
                     <p className="mt-3 text-sm text-zinc-500">
                         made by{' '}
@@ -210,7 +238,7 @@ export default function V4RedirectPage() {
                         >
                             asprin dev
                         </a>
-                        {' '}- version 4 captcha google recaptcha v3
+                        {' '}- version 4 captcha {CAPTCHA_CONFIG.own === 1 ? 'own hosted' : 'google recaptcha v3'}
                     </p>
                 </div>
             </div>
