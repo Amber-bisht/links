@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encodeLinkV4 } from '@/utils/linkWrapper';
 import { verifyCaptcha, isRailwayDomain } from '@/utils/captcha';
+import { auth } from '@/auth';
+import dbConnect from '@/lib/db';
+import User from '@/models/User';
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,6 +13,28 @@ export async function POST(request: NextRequest) {
                 { error: 'Access denied from this domain' },
                 { status: 403 }
             );
+        }
+
+        const session = await auth();
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        await dbConnect();
+
+        // Check Validity via DB to get latest status
+        const user = await User.findOne({ email: session.user.email });
+
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        const now = new Date();
+        if (!user.validUntil || new Date(user.validUntil) < now) {
+            return NextResponse.json({
+                error: 'Subscription Expired. Please contact admin to renew.',
+                code: 'EXPIRED'
+            }, { status: 403 });
         }
 
         const body = await request.json();

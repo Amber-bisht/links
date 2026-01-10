@@ -138,6 +138,13 @@ export default function ShortPage() {
 
             // V4 uses server-side API with CAPTCHA
             if (version === 'v4') {
+                if (!session) {
+                    throw new Error("You must be logged in to create V4 links.");
+                }
+                if (isExpired) {
+                    throw new Error("Your subscription has expired.");
+                }
+
                 // Load reCAPTCHA if not already loaded
                 if (!(window as any).grecaptcha) {
                     const script = document.createElement('script');
@@ -428,8 +435,8 @@ export default function ShortPage() {
                                             </div>
                                         </div>
 
-                                        {/* V5 Status Messages */}
-                                        {version === 'v5' && session && validUntil && (
+                                        {/* V4/V5 Status Messages */}
+                                        {(version === 'v4' || version === 'v5') && session && validUntil && (
                                             <div className={`p-4 rounded-2xl text-sm flex items-center gap-3 ${isExpired ? 'bg-red-500/10 border border-red-500/20 text-red-500' : 'bg-green-500/10 border border-green-500/20 text-green-500'}`}>
                                                 <div className={`w-2 h-2 rounded-full animate-pulse ${isExpired ? 'bg-red-500' : 'bg-green-500'}`} />
                                                 {isExpired ? `Subscription Expired on ${validUntil}` : `Premium valid until: ${validUntil}`}
@@ -445,7 +452,7 @@ export default function ShortPage() {
                                                 <input
                                                     id="url-input"
                                                     type="url"
-                                                    disabled={version === 'v5' && isExpired}
+                                                    disabled={(version === 'v4' || version === 'v5') && isExpired}
                                                     placeholder={version === 'v3' ? 'https://lksfy.com/QDuafv' : 'https://your-link.com'}
                                                     className="w-full p-5 pl-14 rounded-2xl border border-white/10 bg-black/40 hover:bg-black/60 text-white placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-purple-500/50 transition-all disabled:opacity-50"
                                                     value={url}
@@ -475,7 +482,7 @@ export default function ShortPage() {
 
                                         <button
                                             type="submit"
-                                            disabled={loading || (version === 'v5' && isExpired)}
+                                            disabled={loading || ((version === 'v4' || version === 'v5') && isExpired)}
                                             className="relative w-full py-5 bg-gradient-to-r from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 border border-white/10 text-white font-bold rounded-2xl transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
                                         >
                                             <span className="flex items-center justify-center gap-3">
