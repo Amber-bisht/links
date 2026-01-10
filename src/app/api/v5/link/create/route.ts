@@ -30,6 +30,13 @@ export async function POST(req: Request) {
             }, { status: 403 });
         }
 
+        if (!user.linkShortifyKey) {
+            return NextResponse.json({
+                error: 'LinkShortify API Key missing. Please configure it in your account settings.',
+                code: 'KEY_MISSING'
+            }, { status: 403 });
+        }
+
         const { targetUrl, customSlug } = await req.json();
 
         if (!targetUrl) {

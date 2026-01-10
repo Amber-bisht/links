@@ -107,18 +107,11 @@ export default function ShortPage() {
         try {
             // V5 Logic
             if (version === 'v5') {
-                // @ts-ignore
-                const userKey = session?.user?.linkShortifyKey;
-
                 if (!session) {
                     throw new Error("You must be logged in to create V5 links.");
                 }
                 if (isExpired) {
                     throw new Error("Your subscription has expired.");
-                }
-                if (!userKey) {
-                    setShowSettings(true);
-                    throw new Error("Please configure your LinkShortify API Key in Settings.");
                 }
 
                 const res = await fetch('/api/v5/link/create', {
@@ -126,12 +119,17 @@ export default function ShortPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         targetUrl,
-                        ownerApiKey: userKey,
                         customSlug: customSlug || undefined
                     }),
                 });
 
                 const data = await res.json();
+
+                if (data.code === 'KEY_MISSING') {
+                    setShowSettings(true);
+                    throw new Error("Please configure your LinkShortify API Key in Settings.");
+                }
+
                 if (!res.ok) throw new Error(data.error || 'Failed to create link');
 
                 setGeneratedLink(`${window.location.origin}/v5/view/${data.slug}`);
