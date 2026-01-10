@@ -32,6 +32,8 @@ export default function ShortPage() {
     const [showSettings, setShowSettings] = useState(false);
     const [apiKeyInput, setApiKeyInput] = useState('');
     const [savingKey, setSavingKey] = useState(false);
+    const [hasKey, setHasKey] = useState<boolean | null>(null);
+    const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
     // Fetch user status for V5
     useEffect(() => {
@@ -41,11 +43,17 @@ export default function ShortPage() {
                     setValidUntil(new Date(data.validUntil).toLocaleDateString());
                     setIsExpired(new Date(data.validUntil) < new Date());
                 }
+                setHasKey(data.hasKey);
+
+                // Auto-show settings if key is missing and they are in advanced mode or trying to use v5
+                if (!data.hasKey && (category === 'advanced' || version === 'v5')) {
+                    setShowSettings(true);
+                }
             });
             // @ts-ignore
             setApiKeyInput(session.user.linkShortifyKey || '');
         }
-    }, [session]);
+    }, [session, category, version]);
 
     // Update version when category changes to ensure valid selection
     useEffect(() => {
@@ -57,17 +65,30 @@ export default function ShortPage() {
     }, [category]);
 
     const handleSaveKey = async () => {
+        if (!apiKeyInput.trim()) return;
         setSavingKey(true);
+        setSaveStatus(null);
         try {
             const res = await fetch('/api/user/update-key', {
                 method: 'POST',
-                body: JSON.stringify({ apiKey: apiKeyInput })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: apiKeyInput })
             });
-            if (!res.ok) throw new Error('Failed to save');
-            alert('API Key Saved! Please refresh to ensure it is used.');
-            window.location.reload();
-        } catch (e) {
-            alert('Error saving key');
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Failed to save');
+
+            setSaveStatus({ type: 'success', msg: 'Key verified and saved!' });
+            setHasKey(true);
+
+            // Wait a bit then close
+            setTimeout(() => {
+                setShowSettings(false);
+                setSaveStatus(null);
+            }, 2000);
+
+        } catch (e: any) {
+            setSaveStatus({ type: 'error', msg: e.message || 'Error saving key' });
         } finally {
             setSavingKey(false);
         }
@@ -312,7 +333,10 @@ export default function ShortPage() {
 
                                         <div className="space-y-6">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-medium text-zinc-400">LinkShortify API Key</label>
+                                                <div className="flex justify-between items-center">
+                                                    <label className="text-sm font-medium text-zinc-400">LinkShortify API Key</label>
+                                                    {hasKey && <span className="text-[10px] text-green-500 font-bold uppercase tracking-widest bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">Configured</span>}
+                                                </div>
                                                 <input
                                                     type="text"
                                                     value={apiKeyInput}
@@ -320,13 +344,21 @@ export default function ShortPage() {
                                                     className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white placeholder:text-zinc-700 outline-none focus:ring-2 focus:ring-purple-500/50 active:scale-[0.99] transition-all"
                                                     placeholder="Paste your key here"
                                                 />
+                                                <p className="text-[10px] text-zinc-500 px-1">We will test your key by generating a temporary short link before saving.</p>
                                             </div>
+
+                                            {saveStatus && (
+                                                <div className={`p-4 rounded-xl text-xs font-medium border ${saveStatus.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                                                    {saveStatus.msg}
+                                                </div>
+                                            )}
+
                                             <button
                                                 onClick={handleSaveKey}
-                                                disabled={savingKey}
+                                                disabled={savingKey || !apiKeyInput.trim()}
                                                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-purple-900/20 disabled:opacity-50"
                                             >
-                                                {savingKey ? 'Saving...' : 'Save API Key'}
+                                                {savingKey ? 'Verifying & Saving...' : 'Save & Verify Account'}
                                             </button>
                                         </div>
                                     </motion.div>
