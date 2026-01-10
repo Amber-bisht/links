@@ -10,17 +10,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     providers: [
         Google,
     ],
+    session: {
+        strategy: "jwt"
+    },
     callbacks: {
-        async session({ session, user }) {
-            // Attach custom fields from the User document to the session
-            if (session.user) {
+        async jwt({ token, user }) {
+            if (user) {
                 // @ts-ignore
-                session.user.linkShortifyKey = user.linkShortifyKey;
-                session.user.id = user.id;
+                token.linkShortifyKey = user.linkShortifyKey;
+                token.id = user.id;
                 // @ts-ignore
-                session.user.validUntil = user.validUntil;
+                token.validUntil = user.validUntil;
                 // @ts-ignore
-                session.user.role = user.role;
+                token.role = user.role;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+            // Attach custom fields from the JWT token to the session
+            if (session.user && token) {
+                // @ts-ignore
+                session.user.linkShortifyKey = token.linkShortifyKey as string;
+                session.user.id = token.id as string;
+                // @ts-ignore
+                session.user.validUntil = token.validUntil as Date;
+                // @ts-ignore
+                session.user.role = token.role as string;
             }
             return session;
         }
