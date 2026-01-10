@@ -226,7 +226,19 @@ export default function AdminUsersPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-6 border-b border-white/5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button
+                                                        disabled={updatingId === user._id}
+                                                        onClick={() => updateValidity(user._id, 2)}
+                                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-lg border border-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        {updatingId === user._id ? (
+                                                            <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Plus className="w-3.5 h-3.5 text-zinc-500" />
+                                                        )}
+                                                        +2 Day Trial
+                                                    </button>
                                                     <button
                                                         disabled={updatingId === user._id}
                                                         onClick={() => updateValidity(user._id, 30)}
