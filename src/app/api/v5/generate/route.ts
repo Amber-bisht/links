@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import crypto from 'crypto';
 import dbConnect from '@/lib/db';
 import Session from '@/models/Session';
@@ -111,10 +112,22 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Shortener Provider Error' }, { status: 502 });
             }
 
-            return NextResponse.json({
+            const responseJson = {
                 success: true,
                 shortenedUrl: shortLink.trim()
+            };
+
+            const finalResponse = NextResponse.json(responseJson);
+
+            // 8. Set Browser Locking Cookie
+            (await cookies()).set('v5_sid', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 360 // Match session TTL (6 mins)
             });
+
+            return finalResponse;
         } catch (e: any) {
             console.error(`[LinkShortify Timeout/Fetch Error]: ${e.message}`);
             return NextResponse.json({ error: 'Shortener API Timeout or Network Error' }, { status: 504 });

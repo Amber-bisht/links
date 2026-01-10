@@ -52,18 +52,45 @@ export async function POST(req: Request) {
             }
         }
 
-        // 4. Verify Referer (Prevent Direct API Calls)
+        // 4. Verify Time Threshold (35s)
+        const now = new Date();
+        const elapsedSeconds = (now.getTime() - new Date(session.createdAt).getTime()) / 1000;
+
+        if (elapsedSeconds < 35) {
+            console.warn(`[V5 Security Check] Time bypass attempt. Token: ${token}, Elapsed: ${elapsedSeconds.toFixed(1)}s`);
+            if (process.env.NODE_ENV === 'production') {
+                return NextResponse.json({
+                    error: `Security Check Failed: Request too fast. Please wait at least 35 seconds while completing the ad links.`,
+                    code: 'TOO_FAST'
+                }, { status: 403 });
+            }
+        }
+
+        // 5. Verify Referer (Strict Whitelist)
         const referer = req.headers.get('referer');
-        const host = req.headers.get('host');
-        if (process.env.NODE_ENV === 'production' && (!referer || !referer.includes(host || ''))) {
-            console.warn(`[V5 Security Check] Invalid Referer: ${referer} for host: ${host}`);
+        const allowedReferers = ['linkshortify.com', 'lksfy.com'];
+
+        const isWhitelisted = referer && allowedReferers.some(domain => referer.includes(domain));
+
+        if (process.env.NODE_ENV === 'production' && !isWhitelisted) {
+            console.warn(`[V5 Security Check] Invalid Referer: ${referer}. Strictly requiring LinkShortify transit.`);
             return NextResponse.json({
-                error: 'Security Check Failed: Direct API access is prohibited.',
+                error: 'Security Check Failed: You must come directly from the advertisement link. Extractors are not permitted.',
                 code: 'INVALID_REFERER'
             }, { status: 403 });
         }
 
-        // 5. Mark as Used
+        // 6. Verify Browser Locking Cookie
+        const sidCookie = req.headers.get('cookie')?.split('; ').find(row => row.startsWith('v5_sid='))?.split('=')[1];
+        if (process.env.NODE_ENV === 'production' && sidCookie !== token) {
+            console.warn(`[V5 Security Check] Cookie Mismatch or Missing for token ${token}. Sid: ${sidCookie}`);
+            return NextResponse.json({
+                error: 'Security Check Failed: Browser mismatch. Please complete the process in the same browser where you generated the link.',
+                code: 'BROWSER_MISMATCH'
+            }, { status: 403 });
+        }
+
+        // 7. Mark as Used
         session.used = true;
         await session.save();
 
