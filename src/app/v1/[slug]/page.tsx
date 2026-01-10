@@ -26,15 +26,15 @@ export default function RedirectPageV1() {
     // If error, we show the error.
     if (!error) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center p-24 font-mono">
+            <div className="flex min-h-screen flex-col items-center justify-center p-24 font-mono bg-black text-white selection:bg-purple-500/30">
                 <h1 className="text-xl font-bold">links.asprin.dev V1</h1>
-                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                <p className="mt-4 text-sm text-zinc-500">
                     made by{' '}
                     <a
                         href="https://t.me/happySaturday_bitch"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                        className="text-zinc-400 hover:text-white transition-colors underline decoration-zinc-700 hover:decoration-white underline-offset-4"
                     >
                         asprin dev
                     </a>
@@ -45,16 +45,16 @@ export default function RedirectPageV1() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-24 font-mono">
+        <div className="flex min-h-screen flex-col items-center justify-center p-24 font-mono bg-black text-white selection:bg-purple-500/30">
             <h1 className="text-xl font-bold mb-4">Unlocked Link Shortener V1</h1>
-            <p className="text-red-500">{error}</p>
-            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-red-400">{error}</p>
+            <p className="mt-4 text-sm text-zinc-500">
                 made by{' '}
                 <a
                     href="https://t.me/happySaturday_bitch"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    className="text-zinc-400 hover:text-white transition-colors underline decoration-zinc-700 hover:decoration-white underline-offset-4"
                 >
                     unlocked
                 </a>

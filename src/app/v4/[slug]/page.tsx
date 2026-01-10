@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ShieldCheck, AlertCircle, Lock } from "lucide-react";
 
 export default function V4RedirectPage() {
     const params = useParams();
@@ -130,13 +131,18 @@ export default function V4RedirectPage() {
             <div className="max-w-md w-full p-8 bg-zinc-900 rounded-xl shadow-2xl border border-zinc-800">
                 {/* Unlocked Logo/Title */}
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-white mb-1">🔓 links.asprin.dev</h1>
+                    <div className="flex justify-center mb-4">
+                        <div className="p-3 rounded-full bg-zinc-800/50 border border-white/5">
+                            <ShieldCheck className="w-8 h-8 text-white" />
+                        </div>
+                    </div>
+                    <h1 className="text-2xl font-bold text-white mb-1">links.asprin.dev</h1>
                     <p className="text-xs text-zinc-500">Secure Link Verification</p>
                 </div>
 
                 {status === 'loading' && (
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/10 border-t-white mx-auto mb-4"></div>
                         <h2 className="text-xl font-semibold text-white mb-2">
                             Loading...
                         </h2>
@@ -148,7 +154,7 @@ export default function V4RedirectPage() {
 
                 {status === 'verifying' && (
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/10 border-t-white mx-auto mb-4"></div>
                         <h2 className="text-xl font-semibold text-white mb-2">
                             Verifying...
                         </h2>
@@ -160,7 +166,7 @@ export default function V4RedirectPage() {
 
                 {status === 'redirecting' && (
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-2 border-white/10 border-t-white mx-auto mb-4"></div>
                         <h2 className="text-xl font-semibold text-white mb-2">
                             Redirecting...
                         </h2>
@@ -172,7 +178,9 @@ export default function V4RedirectPage() {
 
                 {status === 'error' && (
                     <div className="text-center">
-                        <div className="text-red-500 text-5xl mb-4">⚠️</div>
+                        <div className="flex justify-center mb-4">
+                            <AlertCircle className="w-12 h-12 text-red-500" />
+                        </div>
                         <h2 className="text-xl font-semibold text-white mb-2">
                             Verification Failed
                         </h2>
@@ -181,7 +189,7 @@ export default function V4RedirectPage() {
                         </p>
                         <button
                             onClick={() => router.push('/')}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                            className="px-6 py-3 bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white rounded-xl transition-all w-full font-medium"
                         >
                             Go to Home
                         </button>
@@ -192,13 +200,13 @@ export default function V4RedirectPage() {
                     <p className="text-xs text-zinc-600">
                         Protected by reCAPTCHA v3
                     </p>
-                    <p className="mt-3 text-sm text-zinc-400">
+                    <p className="mt-3 text-sm text-zinc-500">
                         made by{' '}
                         <a
                             href="https://t.me/happySaturday_bitch"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                            className="text-zinc-400 hover:text-white transition-colors underline decoration-zinc-700 hover:decoration-white underline-offset-4"
                         >
                             asprin dev
                         </a>

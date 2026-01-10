@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: 'links.asprin.dev',
     images: [
       {
-        url: '/unlocked-icon.png',
+        url: '/icon.png',
         width: 800,
         height: 600,
         alt: 'links.asprin.dev Logo',
@@ -41,14 +41,14 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "links.asprin.dev - Secure Link Verification",
     description: "Secure link wrapper with CAPTCHA protection and multi-layer encryption",
-    images: ['/unlocked-icon.png'],
+    images: ['/icon.png'],
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: '/unlocked-icon.png',
+    icon: '/icon.png',
   }
 };
 
